@@ -19,7 +19,7 @@ service / on new http:Listener(9090) {
             }
         });
 
-        stream<github:Repository, github:Error?> repositories = check githubEp->getRepositories("wso2", true);
+        stream<github:Repository, github:Error?> repositories = check githubEp->getRepositories(org, true);
         //io:println("Repos: " + repositories.toString());
 
         string[]? repoArray = check from github:Repository repo in repositories
