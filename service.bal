@@ -4,14 +4,18 @@ import ballerina/io;
 
 configurable string token = ?;
 
+type Repository record {|
+    string name;
+    int? stargazerCount;
+|};
+
 # A service representing a network-accessible API
 # bound to port `9090`.
 service / on new http:Listener(9090) {
 
-    # A resource for generating greetings
-    # + name - the input string name
-    # + return - string name with hello message or error
-    resource function get stars/[string org]/[int count]() returns string[]?|error {
+    # A resource for getting an array of repos with highest stars
+    # + return - an array of repos or error
+    resource function get stars/[string org]/[int count]() returns Repository[]?|error {
         // Send a response back to the caller.
         github:Client githubEp = check new (config = {
             auth: {
@@ -19,16 +23,15 @@ service / on new http:Listener(9090) {
             }
         });
 
-        stream<github:Repository, github:Error?> repositories = check githubEp->getRepositories(org, true);
-        //io:println("Repos: " + repositories.toString());
+        stream<github:Repository, github:Error?> repositories = check githubEp->getRepositories(org, true);        
 
-        string[]? repoArray = check from github:Repository repo in repositories
-            order by repo.stargazerCount
+        Repository[]? repoArray = check from github:Repository repo in repositories
+            order by repo.stargazerCount descending
             limit count
-            select repo.name;
+            select {name:repo.name, stargazerCount:repo.stargazerCount};
 
-        foreach var s in repoArray ?: [] {
-            io:println(s);
+        foreach var repo in repoArray ?: [] {
+            io:println(repo.toString());
         }
 
         return repoArray;
